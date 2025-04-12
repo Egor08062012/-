@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сапёр PRO</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 400px;
+            margin-bottom: 10px;
+            color: white;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            color: white;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        
+        select {
+            padding: 8px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+        
+        .board {
+            display: grid;
+            grid-gap: 2px;
+            background-color: #333;
+            padding: 5px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            border: 2px outset #777;
+            color: white;
+        }
+        
+        .cell.revealed {
+            background-color: #333;
+            border: 1px solid #444;
+        }
+        
+        .cell.mine {
+            background-color: #ff0000;
+        }
+        
+        .cell.flagged {
+            background-color: #ffcc00;
+        }
+        
+        .number-1 { color: #4fa8ff; }
+        .number-2 { color: #5dff5d; }
+        .number-3 { color: #ff6b6b; }
+        .number-4 { color: #7b7bff; }
+        .number-5 { color: #ffa347; }
+        .number-6 { color: #47ffff; }
+        .number-7 { color: white; }
+        .number-8 { color: #c7c7c7; }
+        
+        .shop {
+            background-color: #222;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            width: 400px;
+        }
+        
+        .shop h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+        
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #444;
+        }
+        
+        .shop-item button {
+            padding: 5px 10px;
+            background-color: #ff9800;
+        }
+        
+        .shop-item button:hover {
+            background-color: #e68a00;
+        }
+        
+        .money {
+            color: gold;
+            font-weight: bold;
+        }
+        
+        .inventory {
+            margin-top: 15px;
+            background-color: #222;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .inventory h3 {
+            margin-top: 0;
+        }
+        
+        .inventory-item {
+            display: inline-block;
+            margin-right: 10px;
+            background-color: #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: #222;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+        }
+        
+        .modal button {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Сапёр PRO</h1>
+    
+    <div class="game-info">
+        <div>Мины: <span id="mines-count">10</span></div>
+        <div>Флаги: <span id="flags-count">0</span></div>
+        <div>Время: <span id="time">0</span></div>
+        <div>Деньги: <span id="money" class="money">0</span> ₽</div>
+    </div>
+    
+    <div class="controls">
+        <button id="new-game">Новая игра</button>
+        <select id="difficulty">
+            <option value="very-easy">Очень легко (5×5, 3 мины)</option>
+            <option value="easy">Легко (8×8, 10 мин)</option>
+            <option value="medium">Средне (10×10, 20 мин)</option>
+            <option value="hard">Сложно (16×16, 40 мин)</option>
+            <option value="expert">Эксперт (16×30, 99 мин)</option>
+        </select>
+        <button id="open-shop">Магазин</button>
+    </div>
+    
+    <div class="board" id="board"></div>
+    
+    <div class="inventory">
+        <h3>Инвентарь:</h3>
+        <div id="inventory-items">Пусто</div>
+    </div>
+    
+    <div id="shop-modal" class="modal">
+        <div class="modal-content">
+            <h2>Магазин</h2>
+            <div id="shop-items"></div>
+            <button id="close-shop">Закрыть</button>
+        </div>
+    </div>
+    
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="result-title">Результат</h2>
+            <p id="result-message"></p>
+            <div>Заработано: <span id="earned-money" class="money">0</span> ₽</div>
+            <button id="close-result">OK</button>
+        </div>
+    </div>
+    
+    <script>
+        // Конфигурации сложности
+        const difficulties = {
+            'very-easy': { rows: 5, cols: 5, mines: 3, reward: 50 },
+            'easy': { rows: 8, cols: 8, mines: 10, reward: 100 },
+            'medium': { rows: 10, cols: 10, mines: 20, reward: 200 },
+            'hard': { rows: 16, cols: 16, mines: 40, reward: 500 },
+            'expert': { rows: 16, cols: 30, mines: 99, reward: 1000 }
+        };
+        
+        // Товары в магазине
+        const shopItems = [
+            { id: 1, name: "Подсказка", description: "Показывает безопасную клетку", price: 200, use: useHint },
+            { id: 2, name: "Детектор мин", description: "Показывает все мины на 3 секунды", price: 350, use: useMineDetector },
+            { id: 3, name: "Защита", description: "Защищает от проигрыша 1 раз", price: 500, use: null },
+            { id: 4, name: "Удвоитель", description: "Удваивает награду за следующую игру", price: 750, use: null },
+            { id: 5, name: "Время+", description: "+30 секунд к таймеру", price: 300, use: useTimeBonus },
+            { id: 6, name: "Флаги+", description: "+5 флагов", price: 250, use: useExtraFlags },
+            { id: 7, name: "Сканер", description: "Открывает случайную область", price: 400, use: useScanner }
+        ];
+        
+        // Игровое состояние
+        let board = [];
+        let revealed = [];
+        let flagged = [];
+        let gameOver = false;
+        let firstClick = true;
+        let timer = null;
+        let seconds = 0;
+        let currentDifficulty = 'easy';
+        let rows, cols, mines;
+        let money = 0;
+        let inventory = [];
+        let hasProtection = false;
+        let doubleReward = false;
+        
+        // DOM элементы
+        const boardElement = document.getElementById('board');
+        const minesCountElement = document.getElementById('mines-count');
+        const flagsCountElement = document.getElementById('flags-count');
+        const timeElement = document.getElementById('time');
+        const moneyElement = document.getElementById('money');
+        const newGameButton = document.getElementById('new-game');
+        const difficultySelect = document.getElementById('difficulty');
+        const openShopButton = document.getElementById('open-shop');
+        const shopModal = document.getElementById('shop-modal');
+        const shopItemsElement = document.getElementById('shop-items');
+        const closeShopButton = document.getElementById('close-shop');
+        const resultModal = document.getElementById('result-modal');
+        const resultTitle = document.getElementById('result-title');
+        const resultMessage = document.getElementById('result-message');
+        const earnedMoneyElement = document.getElementById('earned-money');
+        const closeResultButton = document.getElementById('close-result');
+        const inventoryItemsElement = document.getElementById('inventory-items');
+        
+        // Инициализация игры
+        function initGame() {
+            currentDifficulty = difficultySelect.value;
+            rows = difficulties[currentDifficulty].rows;
+            cols = difficulties[currentDifficulty].cols;
+            mines = difficulties[currentDifficulty].mines;
+            
+            // Очистка доски
+            boardElement.innerHTML = '';
+            boardElement.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
+            
+            // Сброс состояния игры
+            board = Array(rows).fill().map(() => Array(cols).fill(0));
+            revealed = Array(rows).fill().map(() => Array(cols).fill(false));
+            flagged = Array(rows).fill().map(() => Array(cols).fill(false));
+            gameOver = false;
+            firstClick = true;
+            seconds = 0;
+            timeElement.textContent = '0';
+            minesCountElement.textContent = mines;
+            flagsCountElement.textContent = '0';
+            
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+            
+            // Создание клеток
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    cell.addEventListener('click', () => handleCellClick(i, j));
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        handleRightClick(i, j);
+                    });
+                    
+                    boardElement.appendChild(cell);
+                }
+            }
+            
+            updateInventoryDisplay();
+        }
+        
+        // Размещение мин после первого клика
+        function placeMines(firstRow, firstCol) {
+            let minesPlaced = 0;
+            
+            while (minesPlaced < mines) {
+                const row = Math.floor(Math.random() * rows);
+                const col = Math.floor(Math.random() * cols);
+                
+                // Не размещаем мину на первой клетке и там, где уже есть мина
+                if ((row !== firstRow || col !== firstCol) && board[row][col] !== -1) {
+                    board[row][col] = -1;
+                    minesPlaced++;
+                    
+                    // Обновляем счетчики соседних клеток
+                    for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
+                        for (let j = Math.max(0, col - 1); j <= Math.min(cols - 1, col + 1); j++) {
+                            if (board[i][j] !== -1) {
+                                board[i][j]++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Обработка клика по клетке
+        function handleCellClick(row, col) {
+            if (gameOver || flagged[row][col]) return;
+            
+            if (firstClick) {
+                firstClick = false;
+                placeMines(row, col);
+                startTimer();
+            }
+            
+            if (revealed[row][col]) {
+                // Попытка открыть соседние клетки при клике на открытую клетку с числом
+                if (board[row][col] > 0) {
+                    chordCells(row, col);
+                }
+                return;
+            }
+            
+            revealCell(row, col);
+            
+            if (board[row][col] === -1) {
+                // Игрок наступил на мину
+                if (hasProtection) {
+                    // Используем защиту
+                    hasProtection = false;
+                    board[row][col] = 0;
+                    revealed[row][col] = false;
+                    const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                    cell.classList.remove('mine', 'revealed');
+                    cell.textContent = '';
+                    updateInventoryDisplay();
+                    return;
+                }
+                
+                gameOver = true;
+                revealAllMines();
+                clearInterval(timer);
+                showResult(false);
+            } else if (checkWin()) {
+                // Игрок победил
+                gameOver = true;
+                clearInterval(timer);
+                const reward = doubleReward ? difficulties[currentDifficulty].reward * 2 : difficulties[currentDifficulty].reward;
+                doubleReward = false;
+                money += reward;
+                updateMoney();
+                showResult(true, reward);
+            }
+        }
+        
+        // Открытие клетки
+        function revealCell(row, col) {
+            if (row < 0 || row >= rows || col < 0 || col >= cols || revealed[row][col] || flagged[row][col]) {
+                return;
+            }
+            
+            revealed[row][col] = true;
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            cell.classList.add('revealed');
+            
+            if (board[row][col] === -1) {
+                cell.classList.add('mine');
+                cell.textContent = '💣';
+            } else if (board[row][col] > 0) {
+                cell.textContent = board[row][col];
+                cell.classList.add(`number-${board[row][col]}`);
+            } else {
+                // Рекурсивно открываем соседние пустые клетки
+                for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
+                    for (let j = Math.max(0, col - 1); j <= Math.min(cols - 1, col + 1); j++) {
+                        if (i !== row || j !== col) {
+                            revealCell(i, j);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Открытие соседних клеток при клике на число
+        function chordCells(row, col) {
+            let flagCount = 0;
+            
+            // Считаем количество флагов вокруг
+            for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
+                for (let j = Math.max(0, col - 1); j <= Math.min(cols - 1, col + 1); j++) {
+                    if (flagged[i][j]) {
+                        flagCount++;
+                    }
+                }
+            }
+            
+            // Если количество флагов совпадает с числом, открываем соседние клетки
+            if (flagCount === board[row][col]) {
+                for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
+                    for (let j = Math.max(0, col - 1); j <= Math.min(cols - 1, col + 1); j++) {
+                        if (!flagged[i][j] && !revealed[i][j]) {
+                            handleCellClick(i, j);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Обработка правого клика (установка/снятие флага)
+        function handleRightClick(row, col) {
+            if (gameOver || revealed[row][col]) return;
+            
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            
+            if (flagged[row][col]) {
+                // Снимаем флаг
+                flagged[row][col] = false;
+                cell.classList.remove('flagged');
+                cell.textContent = '';
+            } else {
+                // Ставим флаг
+                flagged[row][col] = true;
+                cell.classList.add('flagged');
+                cell.textContent = '🚩';
+            }
+            
+            // Обновляем счетчик флагов
+            updateFlagsCount();
+        }
+        
+        // Обновление счетчика флагов
+        function updateFlagsCount() {
+            let count = 0;
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (flagged[i][j]) {
+                        count++;
+                    }
+                }
+            }
+            flagsCountElement.textContent = count;
+        }
+        
+        // Запуск таймера
+        function startTimer() {
+            timer = setInterval(() => {
+                seconds++;
+                timeElement.textContent = seconds;
+            }, 1000);
+        }
+        
+        // Проверка на победу
+        function checkWin() {
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (board[i][j] !== -1 && !revealed[i][j]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        
+        // Показать все мины при проигрыше
+        function revealAllMines() {
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (board[i][j] === -1 && !flagged[i][j]) {
+                        const cell = document.querySelector(`.cell[data-row="${i}"][data-col="${j}"]`);
+                        cell.classList.add('mine', 'revealed');
+                        cell.textContent = '💣';
+                    }
+                }
+            }
+        }
+        
+        // Показать результат игры
+        function showResult(isWin, reward = 0) {
+            if (isWin) {
+                resultTitle.textContent = 'Победа!';
+                resultMessage.textContent = 'Вы успешно разминировали поле!';
+                earnedMoneyElement.textContent = reward;
+            } else {
+                resultTitle.textContent = 'Поражение';
+                resultMessage.textContent = 'Вы наступили на мину!';
+                earnedMoneyElement.textContent = '0';
+            }
+            resultModal.style.display = 'flex';
+        }
+        
+        // Обновление отображения денег
+        function updateMoney() {
+            moneyElement.textContent = money;
+            localStorage.setItem('minesweeperMoney', money);
+        }
+        
+        // Обновление отображения инвентаря
+        function updateInventoryDisplay() {
+            let items = [];
+            
+            if (hasProtection) items.push("Защита");
+            if (doubleReward) items.push("Удвоитель");
+            
+            // Добавляем предметы из инвентаря
+            inventory.forEach(item => {
+                items.push(item.name);
+            });
+            
+            if (items.length === 0) {
+                inventoryItemsElement.textContent = "Пусто";
+            } else {
+                inventoryItemsElement.innerHTML = items.map(item => 
+                    `<div class="inventory-item">${item}</div>`
+                ).join('');
+            }
+        }
+        
+        // Покупка предмета
+        function buyItem(itemId) {
+            const item = shopItems.find(i => i.id === itemId);
+            if (!item) return;
+            
+            if (money >= item.price) {
+                money -= item.price;
+                updateMoney();
+                
+                if (item.id === 3) { // Защита
+                    hasProtection = true;
+                } else if (item.id === 4) { // Удвоитель
+                    doubleReward = true;
+                } else {
+                    inventory.push(item);
+                }
+                
+                updateInventoryDisplay();
+                alert(`Вы купили "${item.name}"!`);
+            } else {
+                alert("Недостаточно денег!");
+            }
+        }
+        
+        // Использование предмета
+        function useItem(itemId) {
+            const itemIndex = inventory.findIndex(i => i.id === itemId);
+            if (itemIndex === -1) return;
+            
+            const item = inventory[itemIndex];
+            
+            if (item.use) {
+                item.use();
+                inventory.splice(itemIndex, 1);
+                updateInventoryDisplay();
+            }
+        }
+        
+        // Функции использования предметов
+        function useHint() {
+            const safeCells = [];
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (!revealed[i][j] && !flagged[i][j] && board[i][j] !== -1) {
+                        safeCells.push({row: i, col: j});
+                    }
+                }
+            }
+            
+            if (safeCells.length > 0) {
+                const randomCell = safeCells[Math.floor(Math.random() * safeCells.length)];
+                const cell = document.querySelector(`.cell[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
+                cell.style.backgroundColor = '#00ff00';
+                setTimeout(() => {
+                    cell.style.backgroundColor = '';
+                }, 3000);
+            } else {
+                alert("Все безопасные клетки уже открыты!");
+            }
+        }
+        
+        function useMineDetector() {
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (board[i][j] === -1 && !flagged[i][j]) {
+                        const cell = document.querySelector(`.cell[data-row="${i}"][data-col="${j}"]`);
+                        cell.style.backgroundColor = '#ff0000';
+                    }
+                }
+            }
+            
+            setTimeout(() => {
+                for (let i = 0; i < rows; i++) {
+                    for (let j = 0; j < cols; j++) {
+                        if (board[i][j] === -1 && !flagged[i][j]) {
+                            const cell = document.querySelector(`.cell[data-row="${i}"][data-col="${j}"]`);
+                            cell.style.backgroundColor = '';
+                        }
+                    }
+                }
+            }, 3000);
+        }
+        
+        function useTimeBonus() {
+            seconds = Math.max(0, seconds - 30);
+            timeElement.textContent = seconds;
+        }
+        
+        function useExtraFlags() {
+            minesCountElement.textContent = parseInt(minesCountElement.textContent) + 5;
+        }
+        
+        function useScanner() {
+            const hiddenCells = [];
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (!revealed[i][j] && !flagged[i][j]) {
+                        hiddenCells.push({row: i, col: j});
+                    }
+                }
+            }
+            
+            if (hiddenCells.length > 0) {
+                const randomCell = hiddenCells[Math.floor(Math.random() * hiddenCells.length)];
+                revealCell(randomCell.row, randomCell.col);
+                
+                if (board[randomCell.row][randomCell.col] === -1) {
+                    if (hasProtection) {
+                        hasProtection = false;
+                        board[randomCell.row][randomCell.col] = 0;
+                        revealed[randomCell.row][randomCell.col] = false;
+                        const cell = document.querySelector(`.cell[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
+                        cell.classList.remove('mine', 'revealed');
+                        cell.textContent = '';
+                        updateInventoryDisplay();
+                    } else {
+                        gameOver = true;
+                        revealAllMines();
+                        clearInterval(timer);
+                        showResult(false);
+                    }
+                } else if (checkWin()) {
+                    gameOver = true;
+                    clearInterval(timer);
+                    const reward = doubleReward ? difficulties[currentDifficulty].reward * 2 : difficulties[currentDifficulty].reward;
+                    doubleReward = false;
+                    money += reward;
+                    updateMoney();
+                    showResult(true, reward);
+                }
+            }
+        }
+        
+        // Загрузка магазина
+        function loadShop() {
+            shopItemsElement.innerHTML = shopItems.map(item => `
+                <div class="shop-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small>${item.description}</small><br>
+                        Цена: <span class="money">${item.price}</span> ₽
+                    </div>
+                    <button onclick="buyItem(${item.id})" ${money < item.price ? 'disabled' : ''}>Купить</button>
+                </div>
+            `).join('');
+            
+            shopModal.style.display = 'flex';
+        }
+        
+        // Инициализация страницы
+        function initPage() {
+            // Загрузка сохранённых денег
+            const savedMoney = localStorage.getItem('minesweeperMoney');
+            if (savedMoney) {
+                money = parseInt(savedMoney);
+                updateMoney();
+            }
+            
+            // Слушатели событий
+            newGameButton.addEventListener('click', initGame);
+            difficultySelect.addEventListener('change', initGame);
+            openShopButton.addEventListener('click', loadShop);
+            closeShopButton.addEventListener('click', () => {
+                shopModal.style.display = 'none';
+            });
+            closeResultButton.addEventListener('click', () => {
+                resultModal.style.display = 'none';
+            });
+            
+            // Начальная инициализация игры
+            initGame();
+        }
+        
+        // Запуск при загрузке страницы
+        window.onload = initPage;
+        
+        // Глобальные функции для использования в HTML
+        window.buyItem = buyItem;
+    </script>
+</body>
+</html>
