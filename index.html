@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сапёр PRO</title>
+    <title>Сапёр</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -148,18 +148,33 @@
             background-color: #222;
             padding: 10px;
             border-radius: 8px;
+            width: 400px;
         }
         
         .inventory h3 {
             margin-top: 0;
+            text-align: center;
         }
         
         .inventory-item {
-            display: inline-block;
-            margin-right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             background-color: #333;
-            padding: 5px 10px;
+            padding: 8px;
+            margin-bottom: 5px;
             border-radius: 4px;
+        }
+        
+        .use-btn {
+            padding: 3px 8px;
+            background-color: #2196F3;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        
+        .use-btn:hover {
+            background-color: #0b7dda;
         }
         
         .modal {
@@ -213,7 +228,7 @@
     <div class="board" id="board"></div>
     
     <div class="inventory">
-        <h3>Инвентарь:</h3>
+        <h3>Инвентарь</h3>
         <div id="inventory-items">Пусто</div>
     </div>
     
@@ -265,7 +280,7 @@
         let seconds = 0;
         let currentDifficulty = 'easy';
         let rows, cols, mines;
-        let money = 0;
+        let money = 1000; // Начальные деньги для тестирования
         let inventory = [];
         let hasProtection = false;
         let doubleReward = false;
@@ -478,6 +493,9 @@
                 cell.textContent = '';
             } else {
                 // Ставим флаг
+                const flagsLeft = mines - getFlagCount();
+                if (flagsLeft <= 0) return;
+                
                 flagged[row][col] = true;
                 cell.classList.add('flagged');
                 cell.textContent = '🚩';
@@ -487,8 +505,8 @@
             updateFlagsCount();
         }
         
-        // Обновление счетчика флагов
-        function updateFlagsCount() {
+        // Получение количества поставленных флагов
+        function getFlagCount() {
             let count = 0;
             for (let i = 0; i < rows; i++) {
                 for (let j = 0; j < cols; j++) {
@@ -497,7 +515,12 @@
                     }
                 }
             }
-            flagsCountElement.textContent = count;
+            return count;
+        }
+        
+        // Обновление счетчика флагов
+        function updateFlagsCount() {
+            flagsCountElement.textContent = getFlagCount();
         }
         
         // Запуск таймера
@@ -555,23 +578,36 @@
         
         // Обновление отображения инвентаря
         function updateInventoryDisplay() {
-            let items = [];
+            let itemsHTML = "";
             
-            if (hasProtection) items.push("Защита");
-            if (doubleReward) items.push("Удвоитель");
+            // Пассивные предметы
+            if (hasProtection) {
+                itemsHTML += `
+                    <div class="inventory-item">
+                        <span>Защита (авто)</span>
+                    </div>
+                `;
+            }
             
-            // Добавляем предметы из инвентаря
+            if (doubleReward) {
+                itemsHTML += `
+                    <div class="inventory-item">
+                        <span>Удвоитель (авто)</span>
+                    </div>
+                `;
+            }
+            
+            // Активные предметы
             inventory.forEach(item => {
-                items.push(item.name);
+                itemsHTML += `
+                    <div class="inventory-item">
+                        <span>${item.name}</span>
+                        <button onclick="useInventoryItem(${item.id})" class="use-btn">Использовать</button>
+                    </div>
+                `;
             });
             
-            if (items.length === 0) {
-                inventoryItemsElement.textContent = "Пусто";
-            } else {
-                inventoryItemsElement.innerHTML = items.map(item => 
-                    `<div class="inventory-item">${item}</div>`
-                ).join('');
-            }
+            inventoryItemsElement.innerHTML = itemsHTML || "<div style='text-align:center'>Пусто</div>";
         }
         
         // Покупка предмета
@@ -598,8 +634,8 @@
             }
         }
         
-        // Использование предмета
-        function useItem(itemId) {
+        // Использование предмета из инвентаря
+        function useInventoryItem(itemId) {
             const itemIndex = inventory.findIndex(i => i.id === itemId);
             if (itemIndex === -1) return;
             
@@ -627,9 +663,9 @@
             if (safeCells.length > 0) {
                 const randomCell = safeCells[Math.floor(Math.random() * safeCells.length)];
                 const cell = document.querySelector(`.cell[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
-                cell.style.backgroundColor = '#00ff00';
+                cell.style.boxShadow = '0 0 10px #00ff00';
                 setTimeout(() => {
-                    cell.style.backgroundColor = '';
+                    cell.style.boxShadow = '';
                 }, 3000);
             } else {
                 alert("Все безопасные клетки уже открыты!");
@@ -641,7 +677,7 @@
                 for (let j = 0; j < cols; j++) {
                     if (board[i][j] === -1 && !flagged[i][j]) {
                         const cell = document.querySelector(`.cell[data-row="${i}"][data-col="${j}"]`);
-                        cell.style.backgroundColor = '#ff0000';
+                        cell.style.boxShadow = '0 0 10px #ff0000';
                     }
                 }
             }
@@ -651,7 +687,7 @@
                     for (let j = 0; j < cols; j++) {
                         if (board[i][j] === -1 && !flagged[i][j]) {
                             const cell = document.querySelector(`.cell[data-row="${i}"][data-col="${j}"]`);
-                            cell.style.backgroundColor = '';
+                            cell.style.boxShadow = '';
                         }
                     }
                 }
@@ -661,10 +697,12 @@
         function useTimeBonus() {
             seconds = Math.max(0, seconds - 30);
             timeElement.textContent = seconds;
+            alert("+30 секунд к вашему времени!");
         }
         
         function useExtraFlags() {
             minesCountElement.textContent = parseInt(minesCountElement.textContent) + 5;
+            alert("+5 дополнительных флагов!");
         }
         
         function useScanner() {
@@ -731,8 +769,10 @@
             const savedMoney = localStorage.getItem('minesweeperMoney');
             if (savedMoney) {
                 money = parseInt(savedMoney);
-                updateMoney();
+            } else {
+                money = 500; // Стартовые деньги для новых игроков
             }
+            updateMoney();
             
             // Слушатели событий
             newGameButton.addEventListener('click', initGame);
@@ -754,6 +794,7 @@
         
         // Глобальные функции для использования в HTML
         window.buyItem = buyItem;
+        window.useInventoryItem = useInventoryItem;
     </script>
 </body>
 </html>
